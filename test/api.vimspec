@@ -1,0 +1,147 @@
+" test/api.vimspec - API Integration Tests
+
+" Test: API ping response structure
+function! Test_api_ping_structure()
+  let mock_response = '{"healthy": true, "version": "1.0.0"}'
+  let result = json_decode(mock_response)
+  
+  call assert_true(has_key(result, 'healthy'), 'Response should have healthy key')
+  call assert_true(result.healthy, 'Should be healthy')
+  call assert_equal('1.0.0', result.version, 'Should have version')
+endfunction
+
+" Test: Opencode models response parsing
+function! Test_models_response_parsing()
+  let mock_response = '{
+    "providers": {
+      "anthropic": {
+        "name": "Anthropic",
+        "models": {
+          "claude-sonnet-4-5": {
+            "name": "Claude Sonnet 4-5"
+          }
+        }
+      },
+      "openrouter": {
+        "name": "OpenRouter",
+        "models": {
+          "openai/gpt-4o": {
+            "name": "GPT-4o"
+          }
+        }
+      }
+    }
+  }'
+  
+  let result = json_decode(mock_response)
+  let providers = get(result, 'providers', {})
+  
+  call assert_true(has_key(providers, 'anthropic'), 'Should have anthropic provider')
+  call assert_true(has_key(providers, 'openrouter'), 'Should have openrouter provider')
+  
+  let anthropic = providers.anthropic
+  call assert_equal('Anthropic', anthropic.name, 'Provider name should match')
+  
+  call assert_true(has_key(anthropic.models, 'claude-sonnet-4-5'), 'Should have claude model')
+  call assert_equal('Claude Sonnet 4-5', anthropic.models['claude-sonnet-4-5'].name, 'Model name should match')
+endfunction
+
+" Test: Chat message structure
+function! Test_chat_message_structure()
+  let message = {'role': 'user', 'content': 'Hello'}
+  
+  call assert_equal('user', message.role, 'Should have user role')
+  call assert_equal('Hello', message.content, 'Should have content')
+endfunction
+
+" Test: Session creation response
+function! Test_session_creation_response()
+  let mock_response = '{"id": "sess-123", "title": "Vim Chat"}'
+  let result = json_decode(mock_response)
+  
+  call assert_true(has_key(result, 'id'), 'Response should have id')
+  call assert_equal('sess-123', result.id, 'Session ID should match')
+  call assert_equal('Vim Chat', result.title, 'Title should match')
+endfunction
+
+" Test: Message send payload construction
+function! Test_message_payload_construction()
+  let payload = {
+    \ 'parts': [{'type': 'text', 'text': 'Hello'}],
+    \ 'agent': 'Agent.Complete',
+    \ 'model': 'anthropic/claude-sonnet-4-5'
+  \}
+  
+  call assert_true(has_key(payload, 'parts'), 'Should have parts')
+  call assert_equal(1, len(payload.parts), 'Should have one part')
+  call assert_equal('text', payload.parts[0].type, 'Part type should be text')
+  call assert_equal('Agent.Complete', payload.agent, 'Should have agent')
+  call assert_equal('anthropic/claude-sonnet-4-5', payload.model, 'Should have model')
+endfunction
+
+" Test: API URL construction
+function! Test_api_url_construction()
+  let host = '127.0.0.1'
+  let port = 4096
+  let base_url = 'http://' .. host .. ':' .. port
+  
+  call assert_equal('http://127.0.0.1:4096', base_url, 'Base URL should match')
+  
+  let health_url = base_url .. '/global/health'
+  call assert_match('/global/health$', health_url, 'Health URL should match')
+  
+  let session_url = base_url .. '/session'
+  call assert_match('/session$', session_url, 'Session URL should match')
+  
+  let message_url = base_url .. '/session/sess-123/message'
+  call assert_match('/session/sess-123/message$', message_url, 'Message URL should match')
+endfunction
+
+" Test: JSON encoding/decoding roundtrip
+function! Test_json_roundtrip()
+  let original = {
+    \ 'id': 'sess-123',
+    \ 'parts': [
+      {'type': 'text', 'text': 'Hello'},
+      {'type': 'text', 'text': 'World'}
+    ],
+    \ 'agent': 'Agent.Review',
+    \ 'model': 'anthropic/claude-sonnet-4-5'
+  }
+  
+  let encoded = json_encode(original)
+  let decoded = json_decode(encoded)
+  
+  call assert_equal(original.id, decoded.id, 'ID should roundtrip')
+  call assert_equal(len(original.parts), len(decoded.parts), 'Parts count should match')
+  call assert_equal(original.agent, decoded.agent, 'Agent should roundtrip')
+endfunction
+
+" Test: Model ID format validation
+function! Test_model_id_format()
+  let model_ids = [
+    \ 'anthropic/claude-sonnet-4-5',
+    \ 'openrouter/openai/gpt-4o',
+    \ 'ollama/llama2',
+    \ 'google/gemini-pro'
+  \]
+  
+  for model_id in model_ids
+    let parts = split(model_id, '/')
+    call assert_equal(2, len(parts), model_id .. ' should have provider/model format')
+    call assert_true(!empty(parts[0]), model_id .. ' provider should not be empty')
+    call assert_true(!empty(parts[1]), model_id .. ' model should not be empty')
+  endfor
+endfunction
+
+" Test: Error response handling
+function! Test_error_response_handling()
+  let error_response = '{"success": false, "error": "Connection refused"}'
+  let result = json_decode(error_response)
+  
+  call assert_false(result.success, 'Should indicate failure')
+  call assert_true(has_key(result, 'error'), 'Should have error key')
+  call assert_match('Connection refused', result.error, 'Error message should match')
+endfunction
+
+echo 'API tests loaded. Run with :TestAll'

@@ -1,0 +1,356 @@
+*opencode.txt*	Opencode AI Plugin for Vim 9.0+
+
+Author:  Opencode Contributors
+License: MIT
+Version: 0.1.0
+
+==============================================================================
+CONTENTS					*opencode*
+
+1. Introduction			|opencode-intro|
+2. Requirements			|opencode-requirements|
+3. Installation			|opencode-installation|
+4. Configuration			|opencode-configuration|
+5. Commands			|opencode-commands|
+6. Key Mappings			|opencode-mappings|
+7. Chat Interface			|opencode-chat|
+8. Completion			|opencode-completion|
+9. Code Review			|opencode-review|
+10. Model Selection			|opencode-models|
+11. Troubleshooting		|opencode-troubleshooting|
+12. API Reference			|opencode-api|
+
+==============================================================================
+1. INTRODUCTION					*opencode-intro*
+
+Opencode is a Vim plugin that provides AI-powered code completion, chat,
+and code review functionality. It connects to a running Opencode server,
+which manages connections to 75+ LLM providers including Anthropic, OpenAI,
+Ollama, and more.
+
+Features:
+- Intelligent code completion using Agent.Complete
+- Interactive chat with persistent sessions
+- AI code review using Agent.Review
+- Seamless model selection from Opencode's configured providers
+- Support for local and cloud AI models
+
+==============================================================================
+2. REQUIREMENTS					*opencode-requirements*
+
+- Vim 9.0 or later
+- curl command-line tool
+- Opencode server running (see |opencode-installation|)
+
+==============================================================================
+3. INSTALLATION					*opencode-installation*
+
+3.1 Install Opencode Server
+---------------------------
+
+Install Opencode CLI:
+>
+  curl -L https://opencode.ai/install | sh
+<
+
+Configure providers (in Opencode TUI):
+>
+  /connect anthropic    # Connect to Anthropic
+  /models              # Select a model
+<
+
+Start the server:
+>
+  opencode serve
+<
+
+The server runs on http://127.0.0.1:4096 by default.
+
+3.2 Install Vim Plugin
+----------------------
+
+Using vim-plug:
+>
+  Plug 'anomalyco/opencode.vim'
+<
+Then run :PlugInstall
+
+Using packadd:
+>
+  mkdir -p ~/.vim/pack/opencode/start
+  cd ~/.vim/pack/opencode/start
+  git clone https://github.com/anomalyco/opencode.vim.git
+  :helptags doc/
+<
+
+Manual:
+>
+  cp -r autoload plugin doc ~/.vim/
+  vim -u NONE -c "helptags doc/" -c "qa!"
+<
+
+==============================================================================
+4. CONFIGURATION				*opencode-configuration*
+
+Global variables (set in your .vimrc):
+
+>
+  " Server connection (default: 127.0.0.1:4096)
+  let g:opencode_host = '127.0.0.1'
+  let g:opencode_port = 4096
+  
+  " Model selection (empty = use Opencode's default)
+  let g:opencode_model = 'anthropic/claude-sonnet-4-5'
+  
+  " Reuse sessions for better context (default: 1)
+  let g:opencode_reuse_session = 1
+  
+  " Key mappings
+  let g:opencode_completion_key = '<Tab>'
+  let g:opencode_chat_key = '<C-x>'
+  let g:opencode_review_key = '<Leader>cr'
+  
+  " Enable debug logging
+  let g:opencode_debug = 0
+<
+
+==============================================================================
+5. COMMANDS					*opencode-commands*
+
+:OpencodeConnect				*:OpencodeConnect*
+	Test connection to Opencode server and show status.
+
+:OpencodeModels				*:OpencodeModels*
+	Open model selection picker. Selected model is saved to vimrc.
+
+:OpencodeChat				*:OpencodeChat*
+	Open the AI chat interface in a vertical split window.
+
+:OpencodeComplete			*:OpencodeComplete*
+	Trigger code completion manually.
+
+:OpencodeReview				*:OpencodeReview*
+	Review the current file using Agent.Review.
+
+:OpencodeReviewSelection		*:OpencodeReviewSelection*
+	Review the selected code (visual mode).
+
+:OpencodeHealth				*:OpencodeHealth*
+	Run a health check to verify plugin and API status.
+
+:OpencodeReload				*:OpencodeReload*
+	Reload all plugin files (useful during development).
+
+==============================================================================
+6. KEY MAPPINGS					*opencode-mappings*
+
+<Plug>(opencode-completion)		*<Plug>(opencode-completion)*
+	Trigger code completion. Mapped to <Tab> by default.
+
+<Plug>(opencode-chat)			*<Plug>(opencode-chat)*
+	Open the chat interface. Mapped to <C-x> by default.
+
+<Plug>(opencode-review)		*<Plug>(opencode-review)*
+	Review current file. Mapped to <Leader>cr by default.
+
+Custom mapping examples:
+>
+  " Map to different keys
+  nmap <M-c> <Plug>(opencode-chat)
+  imap <M-c> <Plug>(opencode-chat)
+  
+  " Review key
+  nmap <F7> <Plug>(opencode-review)
+<
+
+==============================================================================
+7. CHAT INTERFACE				*opencode-chat*
+
+The chat interface provides an interactive conversation with the AI.
+
+Basic usage:
+>
+  :OpencodeChat
+  " Type your question and press Enter
+  " Press q or Esc to close
+<
+
+In chat buffer:
+- <Enter>     - Send message
+- <C-Enter>   - Send message with selected code context
+- q/Esc       - Close chat window
+
+The chat uses a persistent session, maintaining conversation history
+across messages.
+
+==============================================================================
+8. COMPLETION					*opencode-completion*
+
+Code completion provides AI-suggested code as you type.
+
+Usage:
+1. Start typing code
+2. Press <Tab> to trigger completion
+3. Select from the dropdown menu
+4. Press <Enter> to accept
+
+The completion uses Agent.Complete, which provides context-aware
+suggestions based on the surrounding code.
+
+==============================================================================
+9. CODE REVIEW					*opencode-review*
+
+The code review feature uses Agent.Review to analyze your code.
+
+:OpencodeReview
+	Review the entire current file.
+
+:OpencodeReviewSelection
+	Review only the selected code (use in visual mode).
+
+Review output includes:
+- Summary of what the code does
+- Potential issues or bugs
+- Suggestions for improvement
+- Code quality score (1-10)
+
+==============================================================================
+10. MODEL SELECTION				*opencode-models*
+
+Selecting a Model
+-----------------
+
+Use :OpencodeModels to browse available models:
+>
+  :OpencodeModels
+<
+This shows a completion picker with all models configured in Opencode.
+When you select a model, it's saved to your vimrc automatically.
+
+Using Default Model
+-------------------
+
+If you don't set g:opencode_model, Opencode will use its default model:
+>
+  let g:opencode_model = ''  " Use Opencode's default
+<
+
+Available Models
+----------------
+
+Models are configured in Opencode, not in Vim. Use the Opencode TUI:
+>
+  /models
+<
+This shows all available models from your configured providers.
+
+==============================================================================
+11. TROUBLESHOOTING				*opencode-troubleshooting*
+
+Plugin not loading:
+>
+  :echo g:loaded_opencode
+  " Should output 1
+  :OpencodeHealth
+<
+
+Server connection failed:
+>
+  " Check server is running
+  curl http://127.0.0.1:4096/global/health
+  
+  " Start server if needed
+  opencode serve
+  
+  " Check health
+  :OpencodeConnect
+<
+
+No models available:
+>
+  " Configure providers in Opencode
+  opencode
+  /connect anthropic
+  /models
+  
+  " Then refresh in Vim
+  :OpencodeReload
+<
+
+Completion not working:
+- Ensure you're in a code buffer
+- Check |opencode-requirements| are met
+- Run :OpencodeHealth for diagnostics
+
+Slow responses:
+- Check your Opencode server and API provider latency
+- Try a faster model in Opencode: /models
+
+==============================================================================
+12. API REFERENCE				*opencode-api*
+
+Model Functions~
+
+opencode#models#get_all()			*opencode#models#get_all()*
+	Returns list of all available models.
+
+opencode#models#get_active()			*opencode#models#get_active()*
+	Returns the currently selected model ID.
+
+opencode#models#set(id)			*opencode#models#set()*
+	Sets the active model by ID.
+
+opencode#models#select()			*opencode#models#select()*
+	Shows model selection picker.
+
+opencode#models#save_to_vimrc(id)		*opencode#models#save_to_vimrc()*
+	Saves model selection to vimrc.
+
+Chat Functions~
+
+opencode#chat#open()				*opencode#chat#open()*
+	Opens the chat interface window.
+
+Completion Functions~
+
+opencode#completion#trigger()			*opencode#completion#trigger()*
+	Manually triggers completion popup.
+
+opencode#completion#omnifunc(findstart, base)	*opencode#completion#omnifunc()*
+	Vim omnifunc for |complete-functions|.
+
+Review Functions~
+
+opencode#review#review_file()			*opencode#review#review_file()*
+	Reviews the current file.
+
+opencode#review#review_selection()		*opencode#review#review_selection()*
+	Reviews selected code.
+
+API Functions~
+
+opencode#api#is_connected()			*opencode#api#is_connected()*
+	Returns v:true if server is connected.
+
+opencode#api#get_models()			*opencode#api#get_models()*
+	Fetches models from Opencode server.
+
+opencode#api#create_session([title])		*opencode#api#create_session()*
+	Creates a new chat session.
+
+opencode#api#send_message(session, text, [agent], [model])	*opencode#api#send_message()*
+	Sends a message to the session.
+
+Utility Functions~
+
+opencode#util#health_check()			*opencode#util#health_check()*
+	Displays plugin and API status.
+
+opencode#util#connect_check()			*opencode#util#connect_check()*
+	Tests connection to server.
+
+opencode#util#reload()				*opencode#util#reload()*
+	Reloads all plugin components.
+
+==============================================================================
+vim:tw=78:ts=8:noet:ft=help:

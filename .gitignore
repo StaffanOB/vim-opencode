@@ -1,0 +1,50 @@
+# Vim Opencode Plugin - .gitignore
+
+# Vim swap files
+*.swp
+*.swo
+*~
+.*.swp
+.*.swo
+
+# Vim undo files
+*.un~
+.*.un~
+
+# Vim backup files
+*.bak
+*.*~
+.#*
+
+# Plugin-specific
+*.vmb.bak
+.viminf*
+
+# Generated documentation tags
+doc/tags
+doc/tags-*
+
+# Test output
+test/*.out
+test/*.log
+
+# Build artifacts
+*.vimdoc
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# IDE/Editor
+.idea/
+.vscode/
+*.code-workspace
+*.sublime-*
+
+# Opencode specific
+.opencode/
+.opencode*
+
+# Opencode cache and logs
+~/.local/share/opencode/
+~/.cache/opencode/
