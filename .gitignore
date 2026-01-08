@@ -6,6 +6,7 @@
 *~
 .*.swp
 .*.swo
+.vimrc
 
 # Vim undo files
 *.un~
